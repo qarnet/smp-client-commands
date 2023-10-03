@@ -23,7 +23,6 @@
 #include <dk_buttons_and_leds.h>
 
 #include <zephyr/device.h>
-#include <zephyr/drivers/flash.h>
 
 // #include <pm_config.h>
 
