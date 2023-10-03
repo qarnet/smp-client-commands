@@ -25,6 +25,6 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/flash.h>
 
-#include <pm_config.h>
+// #include <pm_config.h>
 
 #endif

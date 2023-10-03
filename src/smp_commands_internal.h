@@ -39,7 +39,7 @@ typedef enum
     SMP_CID_OS_INFO = 7
 } smp_os_command_id_t;
 
-typdef enum
+typedef enum
 {
     SMP_CID_APP_IMG_STATE = 0,
     SMP_CID_APP_IMG_UPLOAD = 1,
@@ -47,7 +47,7 @@ typdef enum
     SMP_CID_APP_IMG_CORELIST = 3,
     SMP_CID_APP_IMG_CORELOAD = 4,
     SMP_CID_APP_IMG_ERASE = 5
-} smp_app_image_command_id_t,
+} smp_app_image_command_id_t;
 
 typedef enum
 {

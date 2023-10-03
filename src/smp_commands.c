@@ -22,6 +22,9 @@
 
 static struct bt_conn *default_conn;
 static struct bt_dfu_smp dfu_smp;
+uint8_t hash_value_primarmy_slot[33]; // Just to get it to compile
+uint8_t hash_value_primary_slot[33]; // Just to get it to compile
+uint8_t hash_value_secondary_slot[33]; // Just to get it to compile
 
 struct k_sem upload_sem;
 K_SEM_DEFINE(upload_sem, 1, 1);
@@ -617,8 +620,8 @@ void send_upload2(struct k_work *item)
 	uint8_t data[UPLOAD_CHUNK+1]; // One more byte, to store '/0'
 
     flash_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_flash_controller));
-	int last_addr = PM_MCUBOOT_SECONDARY_END_ADDRESS; 
-	int start_addr = PM_MCUBOOT_SECONDARY_ADDRESS;
+	int last_addr = 0x0; //Arbitrary value
+ 	int start_addr = 0x83000; //Arbitrary value
 	int curr_addr = start_addr;
 	int upload_chunk = UPLOAD_CHUNK;
 	int err;
@@ -657,7 +660,7 @@ void send_upload2(struct k_work *item)
 		zcbor_int64_put(zse, 0);
 		zcbor_tstr_put_lit(zse, "data");
 		zcbor_bstr_put_lit(zse, data);
-        if(off == 0){
+        if(off == 0){hash_value_secondary_slot;
             zcbor_tstr_put_lit(zse, "len");
             zcbor_uint64_put(zse, (uint64_t)last_addr-start_addr);
         }
@@ -888,7 +891,7 @@ static void button_upload(bool state)
 	if (state) {
 		int ret;
 
-		k_work_submit(&upload_work_item);
+		// k_work_submit(&upload_work_item);
 
 	}
 }
@@ -972,7 +975,7 @@ static void button_handler(uint32_t button_state, uint32_t has_changed)
 
 
 
-void main(void)
+void second(void)
 {
 	int err;
 
@@ -980,7 +983,7 @@ void main(void)
 	printk("Starting Bluetooth Central SMP Client example\n");
 
 
-	k_work_init(&upload_work_item, send_upload2);
+	// k_work_init(&upload_work_item, send_upload2);
 
 	bt_dfu_smp_init(&dfu_smp, &init_params);
 
