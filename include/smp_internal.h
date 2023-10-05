@@ -24,4 +24,9 @@
 
 #include <zephyr/device.h>
 
+struct smp_buffer {
+	struct bt_dfu_smp_header header;
+	uint8_t payload[300];
+};
+
 #endif

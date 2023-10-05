@@ -1,31 +1,18 @@
 #include "app_sw_img_mgmt.h"
 
-void smp_echo()
+// zcbor bool decode will trigger error, so zsd->constant_state->stop_on_error needs to be set to false
+
+void smp_state_of_images()
 {
 
 }
 
-void smp_task_stats()
+void smp_image_upload()
 {
 
 }
 
-void smp_mem_pool_stats()
-{
-
-}
-
-void smp_sys_reset()
-{
-
-}
-
-void smp_mcumgr_params()
-{
-
-}
-
-void smp_bootloader_info()
+void smp_image_erase()
 {
 
 }

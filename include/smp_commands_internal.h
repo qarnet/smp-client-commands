@@ -1,8 +1,6 @@
 #ifndef _SMP_COMMANDS_INTERNAL_H_
 #define _SMP_COMMANDS_INTERNAL_H_
 
-#include "smp_commands.h"
-
 typedef enum
 {
     SMP_OID_READ = 0,
