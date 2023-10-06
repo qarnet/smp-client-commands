@@ -11,7 +11,7 @@ project(NONE)
 target_include_directories(app PRIVATE include)
 FILE(GLOB app_headers include/*.h)
 
-FILE(GLOB app_sources src/*.c)
+FILE(GLOB app_sources src/*.c src/mgmt/*.c)
 
 # NORDIC SDK APP START
 target_sources(app PRIVATE ${app_sources})

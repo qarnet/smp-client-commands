@@ -27,8 +27,11 @@
 #include <bluetooth/services/dfu_smp.h>
 #include <dk_buttons_and_leds.h>
 
+#include "default_os_mgmt.h"
+
 static struct bt_conn *default_conn;
 struct bt_dfu_smp dfu_smp;
+volatile bool currently_connected = false;
 
 static void scan_filter_match(struct bt_scan_device_info *device_info,
 			      struct bt_scan_filter_match *filter_match,
@@ -76,6 +79,8 @@ static void discovery_completed_cb(struct bt_gatt_dm *dm,
 		printk("Could not release the discovery data, error "
 		       "code: %d\n", err);
 	}
+
+	currently_connected = true;
 }
 
 static void discovery_service_not_found_cb(struct bt_conn *conn,
@@ -130,18 +135,18 @@ static void connected(struct bt_conn *conn, uint8_t conn_err)
 
 	printk("Connected: %s\n", addr);
 
-	if (bt_conn_set_security(conn, BT_SECURITY_L2)) {
-		printk("Failed to set security\n");
-	}
+	// if (bt_conn_set_security(conn, BT_SECURITY_L2)) {
+	// 	printk("Failed to set security\n");
+	// }
 
-	struct bt_gatt_exchange_params exchange_params;
-	exchange_params.func = exchange_func;
-	err = bt_gatt_exchange_mtu(conn, &exchange_params);
-	if (err) {
-		printk("MTU exchange failed (err %d)\n", err);
-	} else {
-		printk("MTU exchange pending\n");
-	}
+	// struct bt_gatt_exchange_params exchange_params;
+	// exchange_params.func = exchange_func;
+	// err = bt_gatt_exchange_mtu(conn, &exchange_params);
+	// if (err) {
+	// 	printk("MTU exchange failed (err %d)\n", err);
+	// } else {
+	// 	printk("MTU exchange pending\n");
+	// }
 
 	if (conn == default_conn) {
 		err = bt_gatt_dm_start(conn, BT_UUID_DFU_SMP_SERVICE,
@@ -161,6 +166,8 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
 	printk("Disconnected: %s (reason %u)\n", addr, reason);
+
+	currently_connected = false;
 
 	if (default_conn != conn) {
 		return;
@@ -239,6 +246,8 @@ int main(void)
 {
 	int err;
 
+	k_msleep(1000);
+
 	printk("Starting Bluetooth Central SMP Client example\n");
 
 	bt_dfu_smp_init(&dfu_smp, &init_params);
@@ -260,5 +269,26 @@ int main(void)
 	}
 
 	printk("Scanning successfully started\n");
+	
+	while(true)
+	{
+		k_msleep(1000);
+		if(currently_connected)
+		{
+			smp_echo(&dfu_smp);
+			k_msleep(1000);
+			smp_task_stats(&dfu_smp);
+			k_msleep(1000);
+			smp_mem_pool_stats(&dfu_smp);
+			k_msleep(1000);
+			smp_mcumgr_params(&dfu_smp);
+			k_msleep(1000);
+			smp_bootloader_info(&dfu_smp);
+			k_msleep(1000);
+			smp_sys_reset(&dfu_smp);
+			return;
+		}
+	}
+
 	return 0;
 }
