@@ -244,6 +244,8 @@ static const struct bt_dfu_smp_init_params init_params = {
 
 int main(void)
 {
+
+	return 0;
 	int err;
 
 	k_msleep(1000);
@@ -275,17 +277,17 @@ int main(void)
 		k_msleep(1000);
 		if(currently_connected)
 		{
-			smp_echo(&dfu_smp);
-			k_msleep(1000);
-			smp_task_stats(&dfu_smp);
-			k_msleep(1000);
-			smp_mem_pool_stats(&dfu_smp);
-			k_msleep(1000);
-			smp_mcumgr_params(&dfu_smp);
-			k_msleep(1000);
-			smp_bootloader_info(&dfu_smp);
-			k_msleep(1000);
-			smp_sys_reset(&dfu_smp);
+			// smp_echo(&dfu_smp);
+			// k_msleep(1000);
+			// smp_task_stats(&dfu_smp);
+			// k_msleep(1000);
+			// smp_mem_pool_stats(&dfu_smp);
+			// k_msleep(1000);
+			// smp_mcumgr_params(&dfu_smp);
+			// k_msleep(1000);
+			// smp_bootloader_info(&dfu_smp);
+			// k_msleep(1000);
+			// smp_sys_reset(&dfu_smp);
 			return;
 		}
 	}
