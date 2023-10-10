@@ -8,10 +8,7 @@
 #define SMP_ECHO_MAP_VALUE_MAX_LEN 30
 static struct smp_buffer smp_rsp_buff;
 
-<<<<<<< Updated upstream
-static void smp_echo_rsp_proc(struct bt_dfu_smp *dfu_smp)
-=======
-static int smp_rsp_proc(struct bt_dfu_smp *dfu_smp)
+static void smp_rsp_proc(struct bt_dfu_smp *dfu_smp)
 {
 	uint8_t *p_outdata = (uint8_t *)(&smp_rsp_buff);
 	const struct bt_dfu_smp_rsp_state *rsp_state;
@@ -141,8 +138,7 @@ static int smp_rsp_proc(struct bt_dfu_smp *dfu_smp)
 
 }
 
-static int smp_echo_rsp_proc(struct bt_dfu_smp *dfu_smp)
->>>>>>> Stashed changes
+static void smp_echo_rsp_proc(struct bt_dfu_smp *dfu_smp)
 {
 	uint8_t *p_outdata = (uint8_t *)(&smp_rsp_buff);
 	const struct bt_dfu_smp_rsp_state *rsp_state;
