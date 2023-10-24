@@ -195,7 +195,45 @@ static void smp_rsp_proc(struct bt_dfu_smp *dfu_smp)
 	k_sem_give(&smp_sem);
 }
 
-int smp_state_of_images(struct bt_dfu_smp *dfu_smp, struct smp_state_of_images_rsp *response)
+int smp_get_state_of_images(struct bt_dfu_smp *dfu_smp, struct smp_get_state_of_images_rsp *response)
+{
+	static struct smp_buffer smp_cmd;
+	zcbor_state_t zse[CBOR_ENCODER_STATE_NUM];
+	size_t payload_len;
+
+	k_sem_take(&smp_sem, K_SECONDS(1));
+
+	zcbor_new_encode_state(zse, ARRAY_SIZE(zse), smp_cmd.payload,
+			       sizeof(smp_cmd.payload), 0);
+
+	/* Stop encoding on the error. */
+	zse->constant_state->stop_on_error = true;
+
+	zcbor_map_start_encode(zse, CBOR_MAP_MAX_ELEMENT_CNT);
+	zcbor_map_end_encode(zse, CBOR_MAP_MAX_ELEMENT_CNT);
+
+	if (!zcbor_check_error(zse)) {
+		printk("Failed to encode SMP echo packet, err: %d\n", zcbor_pop_error(zse));
+		return -EFAULT;
+	}
+
+	payload_len = (size_t)(zse->payload - smp_cmd.payload);
+
+	smp_cmd.header.op = SMP_OID_READ;
+	smp_cmd.header.flags = 0;
+	smp_cmd.header.len_h8 = (uint8_t)((payload_len >> 8) & 0xFF);
+	smp_cmd.header.len_l8 = (uint8_t)((payload_len >> 0) & 0xFF);
+	smp_cmd.header.group_h8 = 0;
+	smp_cmd.header.group_l8 = SMP_GID_APP_SOFTWARE_IMG;
+	smp_cmd.header.seq = 0;
+	smp_cmd.header.id  = SMP_CID_APP_IMG_STATE;
+
+	return bt_dfu_smp_command(dfu_smp, smp_rsp_proc,
+				  sizeof(smp_cmd.header) + payload_len,
+				  &smp_cmd);
+}
+
+int smp_set_state_of_images(struct bt_dfu_smp *dfu_smp, struct smp_set_state_of_images_rsp *response, uint8_t *hash, bool confirm)
 {
 	static struct smp_buffer smp_cmd;
 	zcbor_state_t zse[CBOR_ENCODER_STATE_NUM];

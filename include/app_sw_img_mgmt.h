@@ -23,11 +23,26 @@ volatile struct img_data img_data_obj =
     .sha = {0xff, 0xff, 0xff}
 };
 
-struct smp_state_of_images_rsp 
+struct smp_get_state_of_images_rsp 
 {
-    char *echo_string;
+    uint32_t image;
+    uint32_t slot;
+    char version[25];
+    uint8_t hash[32];
+    bool bootable;
+    bool pending;
+    bool confirmed;
+    bool active;
+    bool permanent;
 };
-int smp_state_of_images(struct bt_dfu_smp *dfu_smp, struct smp_state_of_images_rsp *response);
+int smp_get_state_of_images(struct bt_dfu_smp *dfu_smp, struct smp_get_state_of_images_rsp *response);
+
+struct smp_set_state_of_images_rsp 
+{
+    char hash[33];
+    bool confirm;
+};
+int smp_set_state_of_images(struct bt_dfu_smp *dfu_smp, struct smp_set_state_of_images_rsp *response, uint8_t *hash, bool confirm);
 
 struct smp_image_upload_rsp 
 {
@@ -42,8 +57,9 @@ struct smp_image_erase_rsp
 int smp_image_erase(struct bt_dfu_smp *dfu_smp, struct smp_image_erase_rsp *response, uint32_t slot);
 
 union app_sw_img_rsp
-{
-    struct smp_state_of_images_rsp state_of_images;
+{   
+    struct smp_get_state_of_images_rsp get_state_of_images;
+    struct smp_set_state_of_images_rsp set_state_of_images;
     struct smp_image_upload_rsp image_upload;
     struct smp_image_erase_rsp image_erase;
 } full_app_sw_img_rsp;
