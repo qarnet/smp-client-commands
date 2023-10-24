@@ -195,7 +195,7 @@ static void smp_rsp_proc(struct bt_dfu_smp *dfu_smp)
 	k_sem_give(&smp_sem);
 }
 
-int smp_get_state_of_images(struct bt_dfu_smp *dfu_smp, struct smp_get_state_of_images_rsp *response)
+int smp_get_state_of_images(struct bt_dfu_smp *dfu_smp, struct smp_state_of_images_rsp *response)
 {
 	static struct smp_buffer smp_cmd;
 	zcbor_state_t zse[CBOR_ENCODER_STATE_NUM];
@@ -233,7 +233,7 @@ int smp_get_state_of_images(struct bt_dfu_smp *dfu_smp, struct smp_get_state_of_
 				  &smp_cmd);
 }
 
-int smp_set_state_of_images(struct bt_dfu_smp *dfu_smp, struct smp_set_state_of_images_rsp *response, uint8_t *hash, bool confirm)
+int smp_set_state_of_images(struct bt_dfu_smp *dfu_smp, struct smp_state_of_images_rsp *response, uint8_t *hash, bool confirm)
 {
 	static struct smp_buffer smp_cmd;
 	zcbor_state_t zse[CBOR_ENCODER_STATE_NUM];
@@ -248,6 +248,15 @@ int smp_set_state_of_images(struct bt_dfu_smp *dfu_smp, struct smp_set_state_of_
 	zse->constant_state->stop_on_error = true;
 
 	zcbor_map_start_encode(zse, CBOR_MAP_MAX_ELEMENT_CNT);
+	if(NULL != hash)
+	{
+		char hash_cpy[32];
+		memcpy(hash_cpy, hash, sizeof(hash_cpy));
+		zcbor_tstr_put_term(zse, "hash");
+		zcbor_bstr_put_arr(zse, hash_cpy);
+	}
+	zcbor_tstr_put_term(zse, "confirm");
+	zcbor_bool_put(zse, confirm);
 	zcbor_map_end_encode(zse, CBOR_MAP_MAX_ELEMENT_CNT);
 
 	if (!zcbor_check_error(zse)) {
@@ -257,7 +266,7 @@ int smp_set_state_of_images(struct bt_dfu_smp *dfu_smp, struct smp_set_state_of_
 
 	payload_len = (size_t)(zse->payload - smp_cmd.payload);
 
-	smp_cmd.header.op = SMP_OID_READ;
+	smp_cmd.header.op = SMP_OID_WRITE;
 	smp_cmd.header.flags = 0;
 	smp_cmd.header.len_h8 = (uint8_t)((payload_len >> 8) & 0xFF);
 	smp_cmd.header.len_l8 = (uint8_t)((payload_len >> 0) & 0xFF);
@@ -349,8 +358,11 @@ int smp_image_erase(struct bt_dfu_smp *dfu_smp, struct smp_image_erase_rsp *resp
 	zse->constant_state->stop_on_error = true;
 
 	zcbor_map_start_encode(zse, CBOR_MAP_MAX_ELEMENT_CNT);
-	zcbor_tstr_put_lit(zse, "slot");
-    ((slot == 0) || (slot == 1)) ? zcbor_uint32_put(zse, slot) : zcbor_uint32_put(zse, 1);
+	if(slot >= 0 && slot <= 1)
+	{
+		zcbor_tstr_put_lit(zse, "slot");
+		zcbor_uint32_put(zse, slot);
+	}
 	zcbor_map_end_encode(zse, CBOR_MAP_MAX_ELEMENT_CNT);
 
 	if (!zcbor_check_error(zse)) {

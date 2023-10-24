@@ -23,7 +23,7 @@ volatile struct img_data img_data_obj =
     .sha = {0xff, 0xff, 0xff}
 };
 
-struct smp_get_state_of_images_rsp 
+struct smp_state_of_images_rsp 
 {
     uint32_t image;
     uint32_t slot;
@@ -35,14 +35,8 @@ struct smp_get_state_of_images_rsp
     bool active;
     bool permanent;
 };
-int smp_get_state_of_images(struct bt_dfu_smp *dfu_smp, struct smp_get_state_of_images_rsp *response);
-
-struct smp_set_state_of_images_rsp 
-{
-    char hash[33];
-    bool confirm;
-};
-int smp_set_state_of_images(struct bt_dfu_smp *dfu_smp, struct smp_set_state_of_images_rsp *response, uint8_t *hash, bool confirm);
+int smp_get_state_of_images(struct bt_dfu_smp *dfu_smp, struct smp_state_of_images_rsp *response);
+int smp_set_state_of_images(struct bt_dfu_smp *dfu_smp, struct smp_state_of_images_rsp *response, uint8_t *hash, bool confirm);
 
 struct smp_image_upload_rsp 
 {
