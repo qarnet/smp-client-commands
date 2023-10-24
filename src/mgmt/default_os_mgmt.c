@@ -11,6 +11,17 @@ static struct smp_buffer smp_rsp_buff;
 struct k_sem smp_sem;
 K_SEM_DEFINE(smp_sem, 1, 1);
 
+enum smp_mcumgr_params_key
+{
+    SMP_MCUMGR_PARAMS_BUF_SIZE,
+    SMP_MCUMGR_PARAMS_BUF_COUNT,
+};
+char smp_mcumgr_params_keys[][25] = 
+{
+    {"buf_size"},
+    {"buf_count"}
+};
+
 static void smp_rsp_proc(struct bt_dfu_smp *dfu_smp)
 {
 	uint8_t *p_outdata = (uint8_t *)(&smp_rsp_buff);
@@ -31,7 +42,6 @@ static void smp_rsp_proc(struct bt_dfu_smp *dfu_smp)
 
 	if (!bt_dfu_smp_rsp_total_check(dfu_smp))
 	{
-		printk("Total response not received\n");
 		return;
 	}
 
@@ -56,8 +66,10 @@ static void smp_rsp_proc(struct bt_dfu_smp *dfu_smp)
 
 	if(smp_rsp_buff.header.id == SMP_CID_OS_CONSOLE)
 	{
-	size_t payload_len = ((uint16_t)smp_rsp_buff.header.len_h8) << 8 |
+		size_t payload_len = ((uint16_t)smp_rsp_buff.header.len_h8) << 8 |
 				      smp_rsp_buff.header.len_l8;
+
+		printk("CONSOLE\n");
 
 		zcbor_state_t zsd[CBOR_DECODER_STATE_NUM];
 		struct zcbor_string value = {0};
@@ -105,6 +117,8 @@ static void smp_rsp_proc(struct bt_dfu_smp *dfu_smp)
 		struct zcbor_string value = {0};
 		bool ok;
 
+		printk("ECHO\n");
+
 		zcbor_new_decode_state(zsd, ARRAY_SIZE(zsd), smp_rsp_buff.payload, payload_len, 1);
 
 		/* Stop decoding on the error. */
@@ -128,7 +142,10 @@ static void smp_rsp_proc(struct bt_dfu_smp *dfu_smp)
 		char map_value[value.len];
 		memcpy(map_value, value.value, value.len);
 
-		zcbor_map_end_decode(zsd);
+		if(!zcbor_map_end_decode(zsd))
+		{
+			printk("Map end decode failed\n");
+		}
 
 		if (zcbor_check_error(zsd)) {
 			/* Print textual representation of the received CBOR map. */
@@ -147,34 +164,19 @@ static void smp_rsp_proc(struct bt_dfu_smp *dfu_smp)
 		struct zcbor_string value = {0};
 		bool ok;
 
+		printk("INFO\n");
+
 		zcbor_new_decode_state(zsd, ARRAY_SIZE(zsd), smp_rsp_buff.payload, payload_len, 1);
 
 		/* Stop decoding on the error. */
 		zsd->constant_state->stop_on_error = true;
 
 		zcbor_map_start_decode(zsd);
-		
-		if(!zcbor_tstr_decode(zsd, &value))
-		{
-			printk("Decoding error (err: %d)\n", zcbor_pop_error(zsd));
-			return;
-		}
-		char map_key[value.len];
-		memcpy(map_key, value.value, value.len);
-
-		if(!zcbor_tstr_decode(zsd, &value))
-		{
-			printk("Decoding error (err: %d)\n", zcbor_pop_error(zsd));
-			return;
-		}
-		char map_value[value.len];
-		memcpy(map_value, value.value, value.len);
 
 		zcbor_map_end_decode(zsd);
 
 		if (zcbor_check_error(zsd)) {
 			/* Print textual representation of the received CBOR map. */
-			printk("{_\"%s\": \"%s\"}\n", map_key, map_value);
 		} else {
 			printk("Cannot print received CBOR stream (err: %d)\n",
 			       zcbor_pop_error(zsd));
@@ -189,50 +191,36 @@ static void smp_rsp_proc(struct bt_dfu_smp *dfu_smp)
 		struct zcbor_string value = {0};
 		bool ok;
 
+		struct smp_mcumgr_params_rsp response;
+
+		printk("MCUMGR_PARAMS\n");
+
 		zcbor_new_decode_state(zsd, ARRAY_SIZE(zsd), smp_rsp_buff.payload, payload_len, 2);
 
 		/* Stop decoding on the error. */
 		zsd->constant_state->stop_on_error = true;
 
 		zcbor_map_start_decode(zsd);
-		
-		if(!zcbor_tstr_decode(zsd, &value))
+	
+		while(!zcbor_tstr_decode(zsd, &value))
 		{
-			printk("Decoding error (err: %d)\n", zcbor_pop_error(zsd));
-			return;
+			for(int i = 0; i < ARRAY_SIZE(smp_mcumgr_params_keys); i++)
+			{
+				if(0 == strncmp(value.value, smp_mcumgr_params_keys[SMP_MCUMGR_PARAMS_BUF_COUNT], value.len))
+				{
+					zcbor_uint32_decode(zsd, &response.buf_count);
+				}
+				if(0 == strncmp(value.value, smp_mcumgr_params_keys[SMP_MCUMGR_PARAMS_BUF_SIZE], value.len))
+				{
+					zcbor_uint32_decode(zsd, &response.buf_size);
+				}
+			}
 		}
-		char map_key[value.len];
-		memcpy(map_key, value.value, value.len);
-
-		if(!zcbor_tstr_decode(zsd, &value))
-		{
-			printk("Decoding error (err: %d)\n", zcbor_pop_error(zsd));
-			return;
-		}
-		char map_value[value.len];
-		memcpy(map_value, value.value, value.len);
-
-		if(!zcbor_tstr_decode(zsd, &value))
-		{
-			printk("Decoding error (err: %d)\n", zcbor_pop_error(zsd));
-			return;
-		}
-		char map_key_2[value.len];
-		memcpy(map_key_2, value.value, value.len);
-
-		if(!zcbor_tstr_decode(zsd, &value))
-		{
-			printk("Decoding error (err: %d)\n", zcbor_pop_error(zsd));
-			return;
-		}
-		char map_value_2[value.len];
-		memcpy(map_value_2, value.value, value.len);
 
 		zcbor_map_end_decode(zsd);
 
 		if (zcbor_check_error(zsd)) {
 			/* Print textual representation of the received CBOR map. */
-			printk("{_\"%s\": \"%s\"}\n", map_key_2, map_value_2);
 		} else {
 			printk("Cannot print received CBOR stream (err: %d)\n",
 			       zcbor_pop_error(zsd));
@@ -247,34 +235,23 @@ static void smp_rsp_proc(struct bt_dfu_smp *dfu_smp)
 		struct zcbor_string value = {0};
 		bool ok;
 
+		printk("MEM_POOP_STAT\n");
+
 		zcbor_new_decode_state(zsd, ARRAY_SIZE(zsd), smp_rsp_buff.payload, payload_len, 1);
 
 		/* Stop decoding on the error. */
 		zsd->constant_state->stop_on_error = true;
 
-		zcbor_map_start_decode(zsd);
-		
-		if(!zcbor_tstr_decode(zsd, &value))
-		{
-			printk("Decoding error (err: %d)\n", zcbor_pop_error(zsd));
-			return;
-		}
-		char map_key[value.len];
-		memcpy(map_key, value.value, value.len);
+		zcbor_list_start_decode(zsd);
 
-		if(!zcbor_tstr_decode(zsd, &value))
-		{
-			printk("Decoding error (err: %d)\n", zcbor_pop_error(zsd));
-			return;
-		}
-		char map_value[value.len];
-		memcpy(map_value, value.value, value.len);
+		zcbor_tstr_decode(zsd, &value);
 
-		zcbor_map_end_decode(zsd);
+		printk("Size: %d\n", value.len);
+
+		zcbor_list_end_decode(zsd);
 
 		if (zcbor_check_error(zsd)) {
 			/* Print textual representation of the received CBOR map. */
-			printk("{_\"%s\": \"%s\"}\n", map_key, map_value);
 		} else {
 			printk("Cannot print received CBOR stream (err: %d)\n",
 			       zcbor_pop_error(zsd));
@@ -289,34 +266,19 @@ static void smp_rsp_proc(struct bt_dfu_smp *dfu_smp)
 		struct zcbor_string value = {0};
 		bool ok;
 
+		printk("RESET\n");
+
 		zcbor_new_decode_state(zsd, ARRAY_SIZE(zsd), smp_rsp_buff.payload, payload_len, 1);
 
 		/* Stop decoding on the error. */
 		zsd->constant_state->stop_on_error = true;
 
 		zcbor_map_start_decode(zsd);
-		
-		if(!zcbor_tstr_decode(zsd, &value))
-		{
-			printk("Decoding error (err: %d)\n", zcbor_pop_error(zsd));
-			return;
-		}
-		char map_key[value.len];
-		memcpy(map_key, value.value, value.len);
-
-		if(!zcbor_tstr_decode(zsd, &value))
-		{
-			printk("Decoding error (err: %d)\n", zcbor_pop_error(zsd));
-			return;
-		}
-		char map_value[value.len];
-		memcpy(map_value, value.value, value.len);
-
+		// Should be empty
 		zcbor_map_end_decode(zsd);
 
 		if (zcbor_check_error(zsd)) {
 			/* Print textual representation of the received CBOR map. */
-			printk("{_\"%s\": \"%s\"}\n", map_key, map_value);
 		} else {
 			printk("Cannot print received CBOR stream (err: %d)\n",
 			       zcbor_pop_error(zsd));
@@ -331,34 +293,29 @@ static void smp_rsp_proc(struct bt_dfu_smp *dfu_smp)
 		struct zcbor_string value = {0};
 		bool ok;
 
+		printk("TASK_STAT\n");
+
 		zcbor_new_decode_state(zsd, ARRAY_SIZE(zsd), smp_rsp_buff.payload, payload_len, 1);
 
 		/* Stop decoding on the error. */
 		zsd->constant_state->stop_on_error = true;
 
-		zcbor_map_start_decode(zsd);
-		
-		if(!zcbor_tstr_decode(zsd, &value))
-		{
-			printk("Decoding error (err: %d)\n", zcbor_pop_error(zsd));
-			return;
-		}
-		char map_key[value.len];
-		memcpy(map_key, value.value, value.len);
+		zcbor_tstr_decode(zsd, &value);
 
-		if(!zcbor_tstr_decode(zsd, &value))
-		{
-			printk("Decoding error (err: %d)\n", zcbor_pop_error(zsd));
-			return;
-		}
-		char map_value[value.len];
-		memcpy(map_value, value.value, value.len);
+		char test[value.len];
+		test[value.len] = '\0';
+
+		printk("%s\n", test);
+		printk("%s\n", value.value);
+
+		zcbor_map_start_decode(zsd);
+
+
 
 		zcbor_map_end_decode(zsd);
 
 		if (zcbor_check_error(zsd)) {
 			/* Print textual representation of the received CBOR map. */
-			printk("{_\"%s\": \"%s\"}\n", map_key, map_value);
 		} else {
 			printk("Cannot print received CBOR stream (err: %d)\n",
 			       zcbor_pop_error(zsd));
@@ -366,12 +323,13 @@ static void smp_rsp_proc(struct bt_dfu_smp *dfu_smp)
 	}
 	else
 	{
+		printk("ELSE\n");
 	}
 
 	k_sem_give(&smp_sem);
 }
 
-int smp_echo(struct bt_dfu_smp *dfu_smp)
+int smp_echo(struct bt_dfu_smp *dfu_smp, struct smp_echo_rsp *response);
 {
 	static struct smp_buffer smp_cmd;
 	zcbor_state_t zse[CBOR_ENCODER_STATE_NUM];
@@ -411,7 +369,7 @@ int smp_echo(struct bt_dfu_smp *dfu_smp)
 				  &smp_cmd);
 }
 
-int smp_task_stats(struct bt_dfu_smp *dfu_smp)
+int smp_task_stats(struct bt_dfu_smp *dfu_smp, struct smp_task_stats_rsp *response);
 {
 	static struct smp_buffer smp_cmd;
 	zcbor_state_t zse[CBOR_ENCODER_STATE_NUM];
@@ -449,7 +407,7 @@ int smp_task_stats(struct bt_dfu_smp *dfu_smp)
 				  &smp_cmd);
 }
 
-int smp_mem_pool_stats(struct bt_dfu_smp *dfu_smp)
+int smp_mem_pool_stats(struct bt_dfu_smp *dfu_smp, struct smp_mem_pool_stats_rsp *response);
 {
 	static struct smp_buffer smp_cmd;
 	zcbor_state_t zse[CBOR_ENCODER_STATE_NUM];
@@ -487,7 +445,7 @@ int smp_mem_pool_stats(struct bt_dfu_smp *dfu_smp)
 				  &smp_cmd);
 }
 
-int smp_sys_reset(struct bt_dfu_smp *dfu_smp)
+int smp_sys_reset(struct bt_dfu_smp *dfu_smp, struct smp_sys_reset_rsp *response);
 {
 	static struct smp_buffer smp_cmd;
 	zcbor_state_t zse[CBOR_ENCODER_STATE_NUM];
@@ -525,7 +483,7 @@ int smp_sys_reset(struct bt_dfu_smp *dfu_smp)
 				  &smp_cmd);
 }
 
-int smp_mcumgr_params(struct bt_dfu_smp *dfu_smp)
+int smp_mcumgr_params(struct bt_dfu_smp *dfu_smp, struct smp_mcumgr_params_rsp *response);
 {
 	static struct smp_buffer smp_cmd;
 	zcbor_state_t zse[CBOR_ENCODER_STATE_NUM];
@@ -563,7 +521,7 @@ int smp_mcumgr_params(struct bt_dfu_smp *dfu_smp)
 				  &smp_cmd);
 }
 
-int smp_bootloader_info(struct bt_dfu_smp *dfu_smp)
+int smp_bootloader_info(struct bt_dfu_smp *dfu_smp, struct smp_bootloader_info_rsp *response);
 {
 	static struct smp_buffer smp_cmd;
 	zcbor_state_t zse[CBOR_ENCODER_STATE_NUM];
