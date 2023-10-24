@@ -8,8 +8,7 @@
 #define SMP_ECHO_MAP_VALUE_MAX_LEN 30
 static struct smp_buffer smp_rsp_buff;
 
-struct k_sem smp_sem;
-K_SEM_DEFINE(smp_sem, 1, 1);
+static K_SEM_DEFINE(smp_sem, 1, 1);
 
 enum smp_mcumgr_params_key
 {
