@@ -34,7 +34,8 @@ typedef enum
     SMP_CID_OS_DATE_TIME = 4,
     SMP_CID_OS_RESET = 5,
     SMP_CID_OS_MCUMGR_PARAMS = 6,
-    SMP_CID_OS_INFO = 7
+    SMP_CID_OS_INFO = 7,
+    SMP_CID_OS_BOOTLOADER_INFO = 8
 } smp_os_command_id_t;
 
 typedef enum

@@ -36,9 +36,15 @@ struct smp_mcumgr_params_rsp
 };
 int smp_mcumgr_params(struct bt_dfu_smp *dfu_smp, struct smp_mcumgr_params_rsp *response);
 
-struct smp_bootloader_info_rsp 
+struct smp_info_rsp 
 {
 
+};
+int smp_info(struct bt_dfu_smp *dfu_smp, struct smp_info_rsp *response);
+
+struct smp_bootloader_info_rsp 
+{
+    char str_rsp[50];
 };
 int smp_bootloader_info(struct bt_dfu_smp *dfu_smp, struct smp_bootloader_info_rsp *response);
 
